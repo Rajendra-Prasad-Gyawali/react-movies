@@ -1,19 +1,50 @@
 import MovieCard from "../components/MovieCard"
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { getPopularMovies, searchMovies } from "../Services/Api";
 import "../css/Home.css"
 
 function Home() {
     const [searchQuery, setSearchQuery] = useState("");
+    const [movies, setMovies] = useState([]);
+    const [error, setError] = useState(null);
+    const [loading, setLoading] = useState(true);
 
-    const movies = [
-        { id: 1, title: "Inception", release_date: "2010" },
-        { id: 2, title: "The Matrix", release_date: "1999" },
-        { id: 3, title: "Interstellar", release_date: "2014" }
-    ]
+    useEffect(() => {
+        const loadPopularMovies = async () => {
+            try {
+                const popularMovies = await getPopularMovies();
+                setMovies(popularMovies);
+            } catch (err) {
+                console.log(err);
+                setError("Failed to load movies...");
+            }
+            finally {
+                setLoading(false);
+            }
+        }
 
-    const handleSearch = (e) => {
+        loadPopularMovies();
+
+    }, []);
+
+    const handleSearch = async (e) => {
         e.preventDefault();
-        alert(`Searching for: ${searchQuery}`);
+
+        if (!searchQuery.trim()) return;
+        if (loading) return;
+
+        setLoading(true);
+
+        try {
+            const searchedMovies = await searchMovies(searchQuery);
+            setMovies(searchedMovies);
+            setError(null);
+        } catch (err) {
+            console.log(err);
+            setError("Failed to search movies...");
+        } finally {
+            setLoading(false);
+        }
     }
 
     return (
@@ -24,18 +55,25 @@ function Home() {
                     placeholder="Search for movies..."
                     className="search-input"
                     value={searchQuery}
-                    onChange={e => setSearchQuery(e.target.value)}
+                    onChange={(e) => setSearchQuery(e.target.value)}
                 />
                 <button type="submit" className="search-button">Search</button>
             </form>
-            <div className="movies-grid">
-                {
-                    movies.map(movie => 
-                        movie.title.toLowerCase().includes(searchQuery.toLowerCase()) &&
-                        (<MovieCard movie={movie} key={movie.id} />)
-                    )
-                }
-            </div>
+            {error && <div className="error-message">{error}</div>}
+            {loading ? (
+                <div className="loading">Loading...</div>
+            ) : (
+                <div className="movies-grid">
+                    {
+                        movies.map((movie) =>
+                            movie.title.toLowerCase().includes(searchQuery.toLowerCase()) &&
+                            (
+                                <MovieCard movie={movie} key={movie.id} />
+                            )
+                        )
+                    }
+                </div>
+            )}
         </div>
     )
 }
