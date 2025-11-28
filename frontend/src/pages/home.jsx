@@ -21,7 +21,7 @@ function Home() {
             finally {
                 setLoading(false);
             }
-        }
+        };
 
         loadPopularMovies();
 
